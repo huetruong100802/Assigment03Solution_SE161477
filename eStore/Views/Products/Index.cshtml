@@ -1,0 +1,292 @@
+﻿@model BusinessObject.ViewModels.Product.ProductIndexViewModel
+@{
+    ViewData["Title"] = "Index";
+}
+<div class="container-fluid">
+    <h2>Product List</h2>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="myModal" onclick="clearTextBox();">Add New</button><br /><br />
+    <table class="table table-sm table-hover table-bordered m-2">
+        <thead class="table-primary">
+            <tr>
+                <th> 
+                    <input class="form-control me-sm-1" id="searchProductName" placeholder="@Html.DisplayNameFor(model => model.Products[0].ProductName)" type="text" />
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Products[0].Weight)
+                </th>
+                <th>
+                    <input class="form-control me-sm-1" id="searchUnitPrice" placeholder="@Html.DisplayNameFor(model => model.Products[0].UnitPrice)" type="number" />
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Products[0].UnitsInStock)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Products[0].Category)
+                </th>
+                <th>Add to cart</th>
+                <th>Update</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody id="products" class="tbody"></tbody>
+    </table>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Add Product</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group" hidden="hidden">
+                        <label for="ProductID"></label>
+                        <input type="text" class="form-control" id="ProductID" placeholder="Id" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="ProductName">Product Name</label>
+                        <input type="text" class="form-control" id="ProductName" placeholder="Name"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="CategoryId">Category</label>
+                        <select class="form-select" id="CategoryId" ></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="Weight">Weight</label>
+                        <input type="text" class="form-control" id="Weight" placeholder="Weight" />
+                    </div>
+                    <div class="form-group">
+                        <label for="UnitPrice">Unit Price</label>
+                        <input type="number" class="form-control" id="UnitPrice" placeholder="UnitPrice" />
+                    </div>
+                    <div class="form-group">
+                        <label for="UnitsInStock">Unit In Stock</label>
+                        <input type="number" class="form-control" id="UnitsInStock" placeholder="UnitsInStock" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnAdd" onclick="return Add();">Add</button>
+                <button type="button" class="btn btn-primary" id="btnUpdate" style="display:none;" onclick="Update();">Update</button>
+                <button type="button" class="btn btn-default" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    <script type="text/javascript">
+        $(document).ready(function () {
+            ShowAllProducts();
+            fillCategory();
+            $("#searchProductName").keyup(function(){
+                ShowAllProducts();
+            });
+            $("#searchUnitPrice").keyup(function(){
+                ShowAllProducts();
+            });
+        });
+        function Delele(id) {
+            var ans = confirm("Are you sure you want to delete this Product?");
+            if (ans) {
+                $.ajax({
+                    url: "https://localhost:7173/api/products/" + id,
+                    type: "DELETE",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (result) {
+                        ShowAllProducts();
+                    },
+                    error: function (errormessage) {
+                        alert(errormessage.responseText);
+                    }
+                });
+            }
+        }
+        function ShowAllProducts() {
+            var productName = $.trim($("#searchProductName").val());
+            var unitPrice = $.trim($("#searchUnitPrice").val());
+            $.ajax({
+                url: "https://localhost:7173/api/products?productName="+productName+"&unitPrice="+unitPrice,
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    var html = '';
+                    $.each(result, function (index, value) {
+                        html += '<tr>';
+                        html += '<td>' + value.productName + '</td>';
+                        html += '<td>' + value.weight + '</td>';
+                        html += '<td>' + value.unitPrice + '</td>';
+                        html += '<td>' + value.unitsInStock + '</td>';
+                        html += '<td>' + value.category.categoryName + '</td>';
+                        html += '<td><button class="btn btn-danger rounded-2" onclick="return addToCart('+value.productId+')"><i class="fa fa-cart-arrow-down text-white" aria-hidden="true"></i> Add to cart</button></td>';
+                        html += '<td> <a href="#" onclick="return getByID(' + value.productId + ')"><i class="fa fa-pencil-square-o" aria-hidden="true"></i></a> </td>';
+                        html += '<td> <a href="#" onclick="return Delele(' + value.productId + ')"><i class="fa fa-trash" aria-hidden="true"></i></a> </td>';
+                        html += '</tr>';
+                    });
+                    $(".tbody#products").html(html);
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function getByID(ProdId) {
+            $('#myModalLabel').text("Update Product");
+            $('#ProductName').css('border-color', 'lightgrey');
+            $('#Weight').css('border-color', 'lightgrey');
+            $('#UnitPrice').css('border-color', 'lightgrey');
+            $('#UnitsInStock').css('border-color', 'lightgrey');
+            $.ajax({
+                url: "https://localhost:7173/api/products/"+ProdId,
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    $('#ProductID').val(result.productId);
+                    $('#CategoryId').val(result.categoryId);
+                    $('#ProductName').val(result.productName);
+                    $('#Weight').val(result.weight);
+                    $('#UnitPrice').val(result.unitPrice);
+                    $('#UnitsInStock').val(result.unitsInStock);
+
+                    $('#myModal').modal('show');  
+                    $('#btnUpdate').show();  
+                    $('#btnAdd').hide();  
+
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function Add(){
+            var res = validate();
+            if (res == false) {
+                return false;
+            }
+            var prodObj = {
+                ProductName: $('#ProductName').val(),
+                CategoryId: $('#CategoryId').val(),
+                Weight: $('#Weight').val(),
+                UnitPrice: $('#UnitPrice').val(),
+                UnitsInStock: $('#UnitsInStock').val(),
+            };
+            $.ajax({
+                url: "https://localhost:7173/api/products",
+                data: JSON.stringify(prodObj),
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    ShowAllProducts();
+                    $('#myModal').modal('hide');
+                },
+                error: function (errormessage) {  
+                    alert(errormessage.responseText);  
+                }  
+            });
+        }
+        function Update(){
+            var res = validate();
+            if (res == false) {
+                return false;
+            }
+            var prodObj = {
+                ProductId: $('#ProductID').val(),
+                ProductName: $('#ProductName').val(),
+                CategoryId: $('#CategoryId').val(),
+                Weight: $('#Weight').val(),
+                UnitPrice: $('#UnitPrice').val(),
+                UnitsInStock: $('#UnitsInStock').val(),
+            };
+            $.ajax({
+                url: "https://localhost:7173/api/products/"+ prodObj.ProductId,
+                data: JSON.stringify(prodObj),
+                type: "PUT",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    ShowAllProducts();
+                    $('#myModal').modal('hide');
+                    $('#ProductID').val("");
+                    $('#ProductName').val("");
+                    $('#Weight').val("");
+                    $('#UnitPrice').val("");
+                    $('#UnitsInStock').val("");
+                },
+                error: function (errormessage) {  
+                    alert(errormessage.responseText);  
+                }  
+            });
+        }
+        function clearTextBox(){
+            $('#myModalLabel').text("Add Product");
+            $('#ProductID').val("");
+            $('#ProductName').val("");
+            $('#Weight').val("");
+            $('#UnitPrice').val("");
+            $('#UnitsInStock').val("");
+            $('#btnUpdate').hide();
+            $('#btnAdd').show();
+            $('#ProductName').css('border-color', 'lightgrey');
+            $('#Weight').css('border-color', 'lightgrey');
+            $('#UnitPrice').css('border-color', 'lightgrey');
+            $('#UnitsInStock').css('border-color', 'lightgrey');
+            $('#myModal').modal('show');
+        }
+        function validate() {
+            var isValid = true;
+            if ($("#ProductName").val().trim() == "") {
+                $("#ProductName").css('border-color', 'Red');
+                isValid = false;
+            } else {
+                $("#ProductName").css('border-color', 'lightgrey');
+            }
+            if ($("#Weight").val().trim() == "") {
+                $("#Weight").css('border-color', 'Red');
+                isValid = false;
+            } else {
+                $("#Weight").css('border-color', 'lightgrey');
+            }
+            if ($("#UnitPrice").val().trim() == "") {
+                $("#UnitPrice").css('border-color', 'Red');
+                isValid = false;
+            }else if ($("#UnitPrice").val() < 0) {
+                $("#UnitPrice").css('border-color', 'Red');
+                isValid = false;
+            } else {
+                $("#UnitPrice").css('border-color', 'lightgrey');
+            }
+            if ($("#UnitsInStock").val().trim() == "") {
+                $("#UnitsInStock").css('border-color', 'Red');
+                isValid = false;
+            }else if ($("#UnitsInStock").val() < 0) {
+                $("#UnitsInStock").css('border-color', 'Red');
+                isValid = false;
+            } else {
+                $("#UnitsInStock").css('border-color', 'lightgrey');
+            }
+            return isValid;
+        }
+        function fillCategory(){
+            $.ajax({
+                    url: "https://localhost:7173/api/products/categories",
+                    type: "GET",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json", success: function (result) {
+                        var list = $('select#CategoryId');
+                        list.find('option').remove();
+                        $.each(result, function (index, value) {
+                            list.append('<option value="' + value.categoryId + '">' + value.categoryName+'</option>');
+                        });
+                    },
+                    error: function (errormessage) {
+                        alert(errormessage.responseText);
+                    }
+            });
+        }
+        
+    </script>
+
+}

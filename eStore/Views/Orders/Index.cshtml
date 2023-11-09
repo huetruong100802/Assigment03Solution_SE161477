@@ -1,0 +1,316 @@
+﻿@model BusinessObject.ViewModels.Order.OrderViewModel
+@{
+    ViewData["Title"] = "Index";
+}
+<div class="container-fluid">
+    <h2>Order List</h2>
+    <table class="table table-sm table-hover table-bordered m-2">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.OrderDate)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.RequiredDate)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.ShippedDate)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Freight)
+                </th>
+                <th>
+                    User
+                </th>
+                <th>Details</th>
+                <th>Update</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody id="order" class="tbody"></tbody>
+    </table>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Update Order</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group" hidden="hidden">
+                        <label for="OrderID"></label>
+                        <input type="text" class="form-control" id="OrderID" placeholder="Id" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="OrderDate">Order Date</label>
+                        <input type="text" class="form-control" id="OrderDate" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="UserName">Username</label>
+                        <input type="text" class="form-control" id="UserName" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="RequiredDate">Required Date</label>
+                        <input type="date" class="form-control" id="RequiredDate" placeholder="mm/dd/yyyy"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="ShippedDate">Shipped Date</label>
+                        <input type="date" class="form-control" id="ShippedDate" placeholder="mm/dd/yyyy" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Freight">Freight</label>
+                        <input type="number" class="form-control" id="Freight" placeholder="0.0" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnUpdate" onclick="Update();">Update</button>
+                <button type="button" class="btn btn-default" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="myDetailsModal" tabindex="-1" role="dialog" aria-labelledby="myDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myDetailsModalLabel">Order Details</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row">
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.OrderDate)
+                    </dt>
+                    <dd class="col-sm-8" id="OrderDate">
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.RequiredDate)
+                    </dt>
+                    <dd class="col-sm-8" id="RequiredDate">
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.ShippedDate)
+                    </dt>
+                    <dd class="col-sm-8" id="ShippedDate">
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.Freight)
+                    </dt>
+                    <dd class="col-sm-8" id="Freight">
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.UserName)
+                    </dt>
+                    <dd class="col-sm-8" id="UserName">
+                    </dd>
+                    <dt class="col-sm-4">
+                        Items
+                    </dt>
+                </dl>
+                <table class="table table-sm table-hover table-bordered m-2">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Unit Price</th>
+                            <th>Quantity</th>
+                            <th>Discount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="details" class="tbody"></tbody>
+                    <tfoot>
+                        <tr>
+                            <th scope="row">Total:</th>
+                            <td id="sum" colspan="4" style="text-align: center">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    <script type="text/javascript">
+        $(document).ready(function () {
+            load();
+        });
+        function load() {
+            $.ajax({
+                url: "https://localhost:7173/api/orders",
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    var html = '';
+                    $.each(result, function (index, value) {
+                        html += '<tr>';
+                        html += '<td>' + value.orderDate + '</td>';
+                        html += '<td>' + value.requiredDate + '</td>';
+                        html += '<td>' + value.shippedDate + '</td>';
+                        html += '<td>' + value.freight + '</td>';
+                        html += '<td>' + value.userName + '</td>';
+                        html += '<td> <a href="#" onclick="return viewDetail(' + value.orderId + ')"><i class="fa fa-info-circle" aria-hidden="true"></i></a></td>';
+                        html += '<td> <a href="#" onclick="return getById(' + value.orderId + ')"><i class="fa fa-pencil-square-o" aria-hidden="true"></i></a> </td>';
+                        html += '<td> <a href="#" onclick="return Delele(' + value.orderId + ')"><i class="fa fa-trash" aria-hidden="true"></i></a> </td>';
+                        html += '</tr>';
+                    });
+                    $(".tbody#order").html(html);
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function Delele(id) {
+            var ans = confirm("Are you sure you want to delete this Order?");
+            if (ans) {
+                $.ajax({
+                    url: "https://localhost:7173/api/orders/" + id,
+                    type: "DELETE",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (result) {
+                        load();
+                    },
+                    error: function (errormessage) {
+                        alert(errormessage.responseText);
+                    }
+                });
+            }
+        }
+        function getById(id) {
+            $('#RequiredDate').css('border-color', 'lightgrey');
+            $('#ShippedDate').css('border-color', 'lightgrey');
+            $('#Freight').css('border-color', 'lightgrey');
+            $.ajax({
+                url: "https://localhost:7173/api/orders/" + id,
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    $('#OrderID').val(result.orderId);
+                    $('#UserName').val(result.userName);
+                    $('#OrderDate').val(result.orderDate);
+                    $('#RequiredDate').val(result.requiredDate);
+                    $('#ShippedDate').val(result.shippedDate);
+                    $('#Freight').val(result.freight);
+
+                    $('#myModal').modal('show');
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function viewDetail(id) {
+            $.ajax({
+                url: "https://localhost:7173/api/orders/" + id,
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    $('.col-sm-8#UserName').text(result.userName);
+                    $('.col-sm-8#OrderDate').text(result.orderDate);
+                    $('.col-sm-8#RequiredDate').text(result.requiredDate);
+                    $('.col-sm-8#ShippedDate').text(result.shippedDate);
+                    $('.col-sm-8#Freight').text(result.freight);
+                    loadDetails(result.orderId);
+                    $('#myDetailsModal').modal('show');
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function loadDetails(id) {
+            var sum = 0;
+            $.ajax({
+                url: "https://localhost:7173/api/orders/details/"+id,
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    var html = '';
+                    $.each(result, function (index, value) {
+                        html += '<tr>';
+                        html += '<td>'+value.product.productName+'</td>';
+                        html += '<td>' + value.unitPrice + '</td>';
+                        html += '<td>' + value.quantity + '</td>';
+                        html += '<td>' + value.discount + '</td>';
+                        html += '</tr>';
+                        sum += value.unitPrice * (value.quantity - value.discount / 100);
+                    });
+                    $('#sum').text(sum);
+                    $(".tbody#details").html(html);
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function Update(){
+            var res = validate();
+            if (res == false) {
+                return false;
+            }
+            var orderObj = {
+                OrderId: $('#OrderID').val(),
+                UserName: $('#UserName').val(),
+                OrderDate: $('#OrderDate').val(),
+                RequiredDate: $('#RequiredDate').val(),
+                ShippedDate: $('#ShippedDate').val(),
+                Freight: $('#Freight').val(),
+            };
+            $.ajax({
+                url: "https://localhost:7173/api/orders/" + orderObj.OrderId,
+                data: JSON.stringify(orderObj),
+                type: "PATCH",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    load();
+                    $('#myModal').modal('hide');
+                    $('#OrderID').val();
+                    $('#UserName').val();
+                    $('#OrderDate').val();
+                    $('#RequiredDate').val();
+                    $('#ShippedDate').val();
+                    $('#Freight').val();
+                    alert("Update successfully");
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function validate() {
+            var isValid = true;
+            // if ($("#RequiredDate").val().trim() == "") {
+            //     $("#RequiredDate").css('border-color', 'Red');
+            //     isValid = false;
+            // } else {
+            //     $("#RequiredDate").css('border-color', 'lightgrey');
+            // }
+            // if ($("#ShippedDate").val().trim() == "") {
+            //     $("#ShippedDate").css('border-color', 'Red');
+            //     isValid = false;
+            // } else {
+            //     $("#ShippedDate").css('border-color', 'lightgrey');
+            // }
+            if ($("#Freight").val().trim() == "") {
+                $("#Freight").css('border-color', 'Red');
+                isValid = false;
+            } else if ($("#Freight").val() < 0) {
+                $("#Freight").css('border-color', 'Red');
+                isValid = false;
+            } else {
+                $("#Freight").css('border-color', 'lightgrey');
+            }
+            return isValid;
+        }
+    </script>
+}

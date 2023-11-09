@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - eStore</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css-download/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/eStore.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-dark border-bottom box-shadow mb-3" data-bs-theme="dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">eStore</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString()== "Products"?"active":"")" asp-area="" asp-controller="Products" asp-action="Index">Products</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString()== "Orders"?"active":"")" asp-area="" asp-controller="Orders" asp-action="Index">Orders</a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav flex-grow-0">
+                        <li class="nav-item">
+                            <button type="button" class="nav-link active" data-toggle="modal" data-target="myCart" onclick="return viewCart();"><i class="fa-solid fa-cart-shopping fa-3x"></i> <span id="cartCount">0</span></button>
+                        </li>
+                    </ul>
+                    <partial name="_LoginPartial" />
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <div class="modal fade" id="myCart" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel">Shopping Cart</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-sm table-hover table-bordered m-2">
+                        <thead class="table-info">
+                            <tr>
+                                <th>Product</th>
+                                <th>Unit Price</th>
+                                <th>Quantity</th>
+                                <th>Discount</th>
+                                <th></th>
+                                <th>Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart" class="tbody"></tbody>
+                        <tfoot>
+                            <tr>
+                                <th scope="row">Total:</th>
+                                <td id="sum" colspan="5" style="text-align: center">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="btnMakeOrder" onclick="return makeOrder();">Make Order</button>
+                    <button type="button" class="btn btn-default" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2023 - eStore - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://kit.fontawesome.com/79088ae998.js" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function () {
+            getCartCount();
+        });
+        function getCartCount(){
+            $.ajax({
+                url: "@Url.Action("GetCartCount","Cart")",
+                type: "GET",
+                dataType: 'json',
+                success: function (res) {
+                    $('span#cartCount').text(res);
+                },
+                error: function (res) {
+                    console.debug(res);
+                }
+            });
+        }
+        function addToCart(prodId) {
+            $.ajax({
+                url: "https://localhost:7173/api/products/" + prodId,
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    $.ajax({
+                        url: "@Url.Action("AddToCart","Cart")",
+                        data: { model: result },
+                        type: "POST",
+                        dataType: 'json',
+                        success: function (res) {
+                            alert("Add to cart successfully");
+                            $('span#cartCount').text(res);
+                        },
+                        error: function (res) {
+                            console.debug(res);
+                        }
+                    });
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function viewCart(){
+            $.ajax({
+                url: "@Url.Action("ViewCart","Cart")",
+                type: "GET",
+                dataType: 'json',
+                success: function (res) {
+                    var html = '';
+                    $.each(res.items, function (index, value) {
+                        html += '<tr>';
+                        html += '<td>' + value.product.productName + '</td>';
+                        html += '<td>' + value.unitPrice + '</td>';
+                        html += '<td>' + value.quantity + '</td>';
+                        html += '<td>' + value.discount + '</td>';
+                        html += '<td></td>';
+                        html += '<td> <a href="#" onclick="return deleleCartItem(' + value.productId + ')"><i class="fa fa-trash" aria-hidden="true"></i></a> </td>';
+                        html += '</tr>';
+                    });
+                    $(".tbody#cart").html(html);
+                    $('#sum').text(res.sum);
+                    $('#myCart').modal('show');
+                },
+                error: function (res) {
+                    console.debug(res);
+                    $('#myCart').modal('hide');
+                    alert("Add an item first!");
+                }
+            });
+        }
+        function deleleCartItem(prodId){
+            $.ajax({
+                url: "@Url.Action("RemoveCartItem","Cart")",
+                data: { productId : prodId},
+                type: "PUT",
+                dataType: 'json',
+                success: function (res) {
+                    viewCart();
+                    getCartCount();
+                },
+                error: function (res) {
+                    console.debug(res);
+                }
+            });
+        }
+        function updateCartitem(proId) {
+            $.ajax({
+                url: "@Url.Action("UpdateCartItem","Cart")",
+                data: { productId: prodId },
+                type: "PUT",
+                dataType: 'json',
+                success: function (res) {
+                    viewCart();
+                },
+                error: function (res) {
+                    console.debug(res);
+                }
+            });
+        }
+        function makeOrder() {
+            $.ajax({
+                url: "@Url.Action("MakeOrder","Cart")",
+                type: "POST",
+                dataType: 'json',
+                success: function (res) {
+                    // var array = new Array();
+                    // for (var i in res.OrderDetails) {
+                    //     array.push({
+                    //         OrderId: res.OrderDetails[i].OrderId,
+                    //         ProductId: res.OrderDetails[i].ProductId,
+                    //         UnitPrice: res.OrderDetails[i].UnitPrice,
+                    //         Quantity: res.OrderDetails[i].Quantity,
+                    //         Discount: res.OrderDetails[i].Discount,
+                    //     });
+                    // }
+                    
+                    // var orderObj={
+                    //     OrderId : res.orderId,
+                    //     UserId : res.userId,
+                    //     OrderDate : res.orderDate,
+                    //     OrderDetails: array
+                    // }
+                    $.ajax({
+                        url: "https://localhost:7173/api/orders",
+                        data: res,
+                        type: "POST", 
+                        contentType: "application/json; charset=utf-8",
+                        dataType: 'json',
+                        success: function(result){
+                            $('#myCart').modal('hide');
+                            getCartCount();
+                            alert("Order add successfully!");
+                        },
+                        error: function (result) {
+                            alert("Order add fail!\n" + result.responseText);
+                            console.debug(result.responseText);
+                        }
+                    });
+                },
+                error: function (res) {
+                    console.debug(res);
+                }
+            });
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
